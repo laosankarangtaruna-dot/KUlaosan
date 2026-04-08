@@ -836,13 +836,21 @@ function hideLoading(){ document.getElementById('overlay').classList.remove('sho
 
 /* ── LOAD ── */
 async function loadAll(){
-  if(!GAS_URL){ updateLabels(); return; }
+  updateLabels();
+  if(!GAS_URL) return;
   showLoading('Memuat data...');
   try {
     const kelompok=CFG.kelompok, periode=getPeriode();
 
+    // Fetch semua paralel sekaligus
+    const [dj,bk,lk,sa] = await Promise.all([
+      api({ action:'load', sheet:'data_jamaah', kelompok, periode }),
+      api({ action:'load', sheet:'buku_kas',    kelompok, periode }),
+      api({ action:'load', sheet:'laporan_kas', kelompok, periode }),
+      api({ action:'load', sheet:'saldo_awal',  kelompok, periode }),
+    ]);
+
     // Data Jamaah
-    const dj=await api({ action:'load', sheet:'data_jamaah', kelompok, periode });
     if(dj.ok && dj.data.length){
       Array.from(b1.querySelectorAll('tr:not(.rt)')).forEach(r=>r.remove());
       dj.data.sort((a,b)=>a.baris-b.baris).forEach(row=>{
@@ -852,21 +860,19 @@ async function loadAll(){
         setTd(td[0], row.setor||'');
         if(row.kk==='1'){ td[3].dataset.checked='1'; td[3].innerHTML='&#10004;'; }
         setTd(td[5], row.nama||'');
-        const cols=['ir','sudr','ypk','donpns','jatdes','suds','satpam','asad','tanah','dapur','sdqremaja','bata','stia'];
-        cols.forEach((c,i)=>{ if(row[c]) setTd(td[6+i], row[c]); });
-        const cols2=['rt','tk','sym','ytm','or_col','danasehat','tpk'];
-        cols2.forEach((c,i)=>{ if(row[c]) setTd(td[19+i], row[c]); });
+        ['ir','sudr','ypk','donpns','jatdes','suds','satpam','asad','tanah','dapur','sdqremaja','bata','stia']
+          .forEach((c,i)=>{ if(row[c]) setTd(td[6+i], row[c]); });
+        ['rt','tk','sym','ytm','or_col','danasehat','tpk']
+          .forEach((c,i)=>{ if(row[c]) setTd(td[19+i], row[c]); });
       });
     }
 
     // Buku Kas
-    const bk=await api({ action:'load', sheet:'buku_kas', kelompok, periode });
     if(bk.ok && bk.data.length){
       bk.data.forEach(row=>{
         const tr=document.getElementById('k'+row.baris); if(!tr) return;
         const td=tr.querySelectorAll('td');
         setTd(td[0], row.tgl||'');
-        // Keterangan — hanya isi jika baris kosong (tidak punya label tetap)
         if(td[1]?.querySelector('[contenteditable]')) setTd(td[1], row.keterangan||'');
         setTd(td[2], row.code||'');
         if(td[3]?.querySelector('[contenteditable]')) setTd(td[3], row.debet||'');
@@ -875,7 +881,6 @@ async function loadAll(){
     }
 
     // Laporan Kas
-    const lk=await api({ action:'load', sheet:'laporan_kas', kelompok, periode });
     if(lk.ok && lk.data.length){
       const trs=b3.querySelectorAll('tr');
       lk.data.sort((a,b)=>a.baris-b.baris).forEach(row=>{
@@ -889,11 +894,9 @@ async function loadAll(){
     }
 
     // Saldo Awal
-    const sa=await api({ action:'load', sheet:'saldo_awal', kelompok, periode });
     if(sa.ok && sa.data.length){
-      const d=sa.data[0];
-      setTd(document.getElementById('k6saldo'), d.saldo_kas||'');
-      setTd(document.getElementById('l3sAwal'), d.saldo_lap||'');
+      setTd(document.getElementById('k6saldo'), sa.data[0].saldo_kas||'');
+      setTd(document.getElementById('l3sAwal'), sa.data[0].saldo_lap||'');
     }
 
   } catch(e){ showStatus('Error load: '+e.message,'#c0392b'); }
@@ -903,7 +906,6 @@ async function loadAll(){
   pasangFormatter(document.getElementById('t3'));
   recalc1();
   hideLoading();
-  updateLabels();
 }
 
 /* ═══════════════════════════════════════
@@ -912,7 +914,6 @@ async function loadAll(){
 function simpanSetting(){
   CFG.kelompok = document.getElementById('cfg-kelompok').value.trim() || 'Kelompok';
   GAS_URL = document.getElementById('cfg-url').value.trim();
-  localStorage.setItem('cfg_baru', JSON.stringify({ kelompok:CFG.kelompok, gasUrl:GAS_URL }));
   const st=document.getElementById('cfg-status');
   st.textContent='Setting tersimpan. Memuat data...'; st.style.color='var(--hijau2)'; st.style.display='block';
   setTimeout(()=>st.style.display='none',3000);
@@ -921,12 +922,7 @@ function simpanSetting(){
 }
 
 function loadSetting(){
-  const s=JSON.parse(localStorage.getItem('cfg_baru')||'{}');
-  if(s.kelompok){ CFG.kelompok=s.kelompok; document.getElementById('cfg-kelompok').value=s.kelompok; }
-  if(s.gasUrl){ GAS_URL=s.gasUrl; document.getElementById('cfg-url').value=s.gasUrl; }
-  // Sinkronkan periode dari CFG
-  const parts=CFG.periode.split(' ');
-  if(parts.length===2){ const bi=BULAN.indexOf(parts[0]); if(bi>=0){ _pd.b=bi; _pd.t=parseInt(parts[1])||2025; } }
+  // Tidak pakai localStorage — setting diisi manual setiap buka
 }
 
 function resetAll(){
@@ -940,7 +936,6 @@ function resetAll(){
 }
 
 // Init
-loadSetting();
 updateLabels();
 loadAll();
 </script>
