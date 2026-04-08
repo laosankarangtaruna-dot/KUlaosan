@@ -279,6 +279,8 @@ function showTab(name, btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('p-'+name).classList.add('on');
   btn.classList.add('on');
+  // Refresh kelas saat tab kelas dibuka agar daftar anggota selalu update
+  if(name==='kelas') renderKelas();
 }
 
 function updateLabels(){
