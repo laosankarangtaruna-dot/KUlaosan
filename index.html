@@ -201,11 +201,11 @@ footer{text-align:center;padding:16px;font-size:11px;color:#888;border-top:1px s
    CONFIG & API
 ═══════════════════════════════════════ */
 let GAS_URL = 'https://script.google.com/macros/s/AKfycbxK583yc1LAexT0yfH6yzPdT-A4qpfu97kQrcLLEldrrrmjNYHdZHvhbKy1XT0WzRmWvQ/exec';
-let CFG = { kelompok: 'Kelompok', periode: 'Desember 2025' };
+let CFG = { kelompok: '', periode: 'Desember 2025' };
+let _pd = { b: 11, t: 2025 };
 
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni',
                'Juli','Agustus','September','Oktober','November','Desember'];
-let _pd = { b: 11, t: 2025 }; // bulan 0-indexed
 
 function getPeriode(){ return BULAN[_pd.b] + ' ' + _pd.t; }
 
@@ -937,13 +937,20 @@ async function loadAll(){
    SETTING & INIT
 ═══════════════════════════════════════ */
 function simpanSetting(){
-  CFG.kelompok = document.getElementById('cfg-kelompok').value.trim() || 'Kelompok';
+  CFG.kelompok = document.getElementById('cfg-kelompok').value.trim();
   const bulan = document.getElementById('cfg-bulan').value;
   const tahun = parseInt(document.getElementById('cfg-tahun').value) || 2025;
   _pd.b = BULAN.indexOf(bulan);
   _pd.t = tahun;
   const inputUrl = document.getElementById('cfg-url').value.trim();
   if(inputUrl) GAS_URL = inputUrl;
+  // Simpan ke Google Sheet
+  apiPost({ action:'saveSetting', data:{
+    kelompok: CFG.kelompok,
+    bulan: bulan,
+    tahun: String(tahun),
+    gasUrl: GAS_URL
+  }});
   const st=document.getElementById('cfg-status');
   st.textContent='Setting tersimpan. Memuat data...'; st.style.color='var(--hijau2)'; st.style.display='block';
   setTimeout(()=>st.style.display='none',3000);
@@ -965,12 +972,21 @@ function resetAll(){
   recalc1();
 }
 
-// Init — tampilkan URL tertanam di input field Setting
+// Init — load setting dari Google Sheet dulu, baru load data
 document.getElementById('cfg-url').value = GAS_URL;
-document.getElementById('cfg-bulan').value = BULAN[_pd.b];
-document.getElementById('cfg-tahun').value = _pd.t;
-updateLabels();
-loadAll();
+async function init(){
+  // Load setting dari sheet
+  const r = await api({ action:'loadSetting' });
+  if(r.ok && r.data){
+    const s = r.data;
+    if(s.kelompok){ CFG.kelompok = s.kelompok; document.getElementById('cfg-kelompok').value = s.kelompok; }
+    if(s.bulan){ _pd.b = BULAN.indexOf(s.bulan); document.getElementById('cfg-bulan').value = s.bulan; }
+    if(s.tahun){ _pd.t = parseInt(s.tahun)||2025; document.getElementById('cfg-tahun').value = s.tahun; }
+  }
+  updateLabels();
+  loadAll();
+}
+init();
 </script>
 </body>
 </html>
