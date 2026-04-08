@@ -862,6 +862,10 @@ async function loadAll(){
       api({ action:'load', sheet:'saldo_awal',  kelompok, periode }),
     ]);
 
+    console.log('load kelompok:', kelompok, '| periode:', periode);
+    console.log('data_jamaah:', JSON.stringify(dj).substring(0,200));
+    console.log('buku_kas:', JSON.stringify(bk).substring(0,200));
+
     // Data Jamaah
     if(dj.ok && dj.data.length){
       Array.from(b1.querySelectorAll('tr:not(.rt)')).forEach(r=>r.remove());
