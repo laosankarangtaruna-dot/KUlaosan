@@ -410,8 +410,28 @@ function downloadExcel(){
         row[1]=lbl; srow[1]={font:{bold:true},fill:{fgColor:{rgb:'DFF0DF'}},border:BORDER,alignment:{vertical:'center'}};
         aoa.push(row); styles.push(srow); return;
       }
-      // Buat mapping ci -> tdIndex, perhatikan colSpan
-      let ci=0;
+      if(isTotal && !tr.className.includes('rs') && !tr.className.includes('rsa')){
+        // Baris JUMLAH: td[0] colSpan=6 = label, td[1..] = nilai total
+        // Setelah skip kolom 0,1 → label di kolom 0 (NO), merge 4 kolom (NO,KK,Angg,NAMA)
+        // Nilai total mulai dari kolom IR (index 4 setelah skip)
+        const labelTd=tds[0]; const labelTxt=(labelTd.textContent||'').trim();
+        for(let c=0;c<totalCols;c++){row.push('');srow.push(S_TOT);}
+        row[0]=labelTxt;
+        // Merge kolom 0-3 untuk label JUMLAH
+        const rowIdx=aoa.length+judulBaris.length+2; // perkiraan baris di sheet
+        merges.push({s:{r:aoa.length,c:0},e:{r:aoa.length,c:3}});
+        // Isi nilai total dari td[1] dst, mulai di kolom 4 (setelah NO,KK,Angg,NAMA)
+        let colOut=4;
+        for(let i=1;i<tds.length;i++){
+          const td=tds[i];
+          const raw=(td.textContent||'').trim();
+          const n=parseFloat(raw.replace(/\./g,'').replace(',','.'));
+          const val=(raw!==''&&!isNaN(n))?n:raw;
+          if(colOut<totalCols){ row[colOut]=val; srow[colOut]=S_TOT; }
+          colOut++;
+        }
+        aoa.push(row); styles.push(srow); return;
+      }
       const tdMap=[];
       tds.forEach((td,i)=>{ const span=parseInt(td.colSpan)||1; for(let s=0;s<span;s++) tdMap[ci+s]=i; ci+=span; });
       const maxCi=ci;
