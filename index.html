@@ -505,21 +505,56 @@ function tambahKK(){
 }
 
 function tambahAnggota(){
-  // Cari KK terakhir
-  const rows=Array.from(b1.querySelectorAll('tr:not(.rt)'));
-  let lastKK=null;
-  rows.forEach(r=>{ if(r.querySelectorAll('td')[3]?.dataset.checked==='1') lastKK=r; });
-  if(!lastKK){ alert('Tambah KK dulu.'); return; }
-  // Sisip sebelum KK berikutnya atau sebelum baris JUMLAH
-  let insertBefore=b1.querySelector('tr.rt');
-  const kkIdx=rows.indexOf(lastKK);
-  for(let i=kkIdx+1;i<rows.length;i++){
-    if(rows[i].querySelectorAll('td')[3]?.dataset.checked==='1'){ insertBefore=rows[i]; break; }
-  }
-  const row=buatBarisJamaah(false);
-  b1.insertBefore(row, insertBefore);
-  recalc1();
-  row.querySelectorAll('td')[5]?.querySelector('[contenteditable]')?.focus();
+  // Kumpulkan semua KK yang ada
+  const rows = Array.from(b1.querySelectorAll('tr:not(.rt)'));
+  const daftarKK = [];
+  rows.forEach((row,idx)=>{
+    const td=row.querySelectorAll('td');
+    if(td[3]?.dataset.checked==='1'){
+      const nama=(td[5]?.querySelector('[contenteditable]')?.textContent||'').trim();
+      daftarKK.push({idx, nama: nama||'KK '+(daftarKK.length+1), row});
+    }
+  });
+  if(!daftarKK.length){ alert('Belum ada KK. Tambah KK dulu.'); return; }
+
+  // Modal pilih KK
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center';
+  const box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:10px;padding:20px;min-width:260px;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.25)';
+  const ttl=document.createElement('div');
+  ttl.textContent='Pilih KK untuk tambah anggota';
+  ttl.style.cssText='font-weight:700;color:var(--hijau);font-size:14px;margin-bottom:14px';
+  box.appendChild(ttl);
+
+  daftarKK.forEach(({row: kkRow, nama})=>{
+    const btn=document.createElement('button');
+    btn.textContent=nama; btn.className='btn btn-p';
+    btn.style.cssText='display:block;width:100%;margin-bottom:8px;text-align:left;padding:8px 12px';
+    btn.onclick=()=>{
+      overlay.remove();
+      // Sisip anggota baru setelah KK ini, sebelum KK berikutnya
+      const allRows=Array.from(b1.querySelectorAll('tr:not(.rt)'));
+      const kkIdx=allRows.indexOf(kkRow);
+      let insertBefore=b1.querySelector('tr.rt');
+      for(let i=kkIdx+1;i<allRows.length;i++){
+        if(allRows[i].querySelectorAll('td')[3]?.dataset.checked==='1'){ insertBefore=allRows[i]; break; }
+      }
+      const baris=buatBarisJamaah(false);
+      b1.insertBefore(baris, insertBefore);
+      recalc1();
+      baris.querySelectorAll('td')[5]?.querySelector('[contenteditable]')?.focus();
+    };
+    box.appendChild(btn);
+  });
+
+  const btnBatal=document.createElement('button');
+  btnBatal.textContent='Batal'; btnBatal.className='btn btn-r';
+  btnBatal.style.cssText='display:block;width:100%;margin-top:4px';
+  btnBatal.onclick=()=>overlay.remove();
+  box.appendChild(btnBatal);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 </script>
 
@@ -896,11 +931,11 @@ async function loadAll(){
     if(dj.ok && dj.data.length){
       Array.from(b1.querySelectorAll('tr:not(.rt)')).forEach(r=>r.remove());
       dj.data.sort((a,b)=>a.baris-b.baris).forEach(row=>{
-        const tr=buatBarisJamaah(row.kk==='1');
+        const tr=buatBarisJamaah(String(row.kk)==='1');
         b1.insertBefore(tr, b1.querySelector('tr.rt'));
         const td=tr.querySelectorAll('td');
         setTd(td[0], row.setor||'');
-        if(row.kk==='1'){ td[3].dataset.checked='1'; td[3].innerHTML='&#10004;'; }
+        if(String(row.kk)==='1'){ td[3].dataset.checked='1'; td[3].innerHTML='&#10004;'; }
         setTd(td[5], row.nama||'');
         ['ir','sudr','ypk','donpns','jatdes','suds','satpam','asad','tanah','dapur','sdqremaja','bata','stia']
           .forEach((c,i)=>{ if(row[c]) setTd(td[6+i], row[c]); });
