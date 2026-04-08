@@ -916,7 +916,8 @@ async function loadAll(){
 ═══════════════════════════════════════ */
 function simpanSetting(){
   CFG.kelompok = document.getElementById('cfg-kelompok').value.trim() || 'Kelompok';
-  GAS_URL = document.getElementById('cfg-url').value.trim();
+  const inputUrl = document.getElementById('cfg-url').value.trim();
+  if(inputUrl) GAS_URL = inputUrl; // hanya update jika diisi, jaga nilai default
   const st=document.getElementById('cfg-status');
   st.textContent='Setting tersimpan. Memuat data...'; st.style.color='var(--hijau2)'; st.style.display='block';
   setTimeout(()=>st.style.display='none',3000);
@@ -938,7 +939,8 @@ function resetAll(){
   recalc1();
 }
 
-// Init
+// Init — tampilkan URL tertanam di input field Setting
+document.getElementById('cfg-url').value = GAS_URL;
 updateLabels();
 loadAll();
 </script>
