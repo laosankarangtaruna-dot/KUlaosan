@@ -191,7 +191,7 @@ footer{text-align:center;padding:16px;font-size:11px;color:#888;border-top:1px s
 /* ═══════════════════════════════════════
    CONFIG & API
 ═══════════════════════════════════════ */
-let GAS_URL = '';
+let GAS_URL = 'https://script.google.com/macros/s/AKfycbxK583yc1LAexT0yfH6yzPdT-A4qpfu97kQrcLLEldrrrmjNYHdZHvhbKy1XT0WzRmWvQ/exec';
 let CFG = { kelompok: 'Kelompok', periode: 'Desember 2025' };
 
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni',
@@ -200,21 +200,24 @@ let _pd = { b: 11, t: 2025 }; // bulan 0-indexed
 
 function getPeriode(){ return BULAN[_pd.b] + ' ' + _pd.t; }
 
-// Semua request pakai GET + payload di-encode agar tidak kena CORS dari file://
+// Semua request pakai GET — GAS hanya support GET untuk cross-origin
 async function api(params){
   if(!GAS_URL) return { ok: false, error: 'URL belum diset. Buka tab Setting.' };
   const url = GAS_URL + '?' + new URLSearchParams(params);
-  const res = await fetch(url, { redirect: 'follow' });
-  return res.json();
+  const res = await fetch(url);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e){ return { ok:false, error:'Response bukan JSON: '+text.substring(0,200) }; }
 }
 
+// Save: kirim data lewat GET dengan payload JSON di-encode
 async function apiPost(body){
   if(!GAS_URL) return { ok: false, error: 'URL belum diset. Buka tab Setting.' };
-  // Encode payload sebagai GET parameter untuk hindari CORS preflight
-  const payload = encodeURIComponent(JSON.stringify(body));
-  const url = GAS_URL + '?payload=' + payload;
-  const res = await fetch(url, { redirect: 'follow' });
-  return res.json();
+  const url = GAS_URL + '?payload=' + encodeURIComponent(JSON.stringify(body));
+  const res = await fetch(url);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e){ return { ok:false, error:'Response bukan JSON: '+text.substring(0,200) }; }
 }
 
 /* ═══════════════════════════════════════
