@@ -962,13 +962,15 @@ async function simpanSetting(){
   if(inputUrl) GAS_URL = inputUrl;
   const st=document.getElementById('cfg-status');
   st.textContent='Menyimpan...'; st.style.color='#e67e22'; st.style.display='block';
-  // Simpan ke Google Sheet
-  const r = await apiPost({ action:'saveSetting', data:{
-    kelompok: CFG.kelompok,
-    bulan: bulan,
-    tahun: String(tahun),
-    gasUrl: GAS_URL
-  }});
+  // Simpan ke Google Sheet lewat GET (payload di URL) — data kecil, aman pakai GET
+  const settingPayload = encodeURIComponent(JSON.stringify({ action:'saveSetting', data:{
+    kelompok: CFG.kelompok, bulan, tahun: String(tahun), gasUrl: GAS_URL
+  }}));
+  const r = await (async ()=>{
+    const res = await fetch(GAS_URL + '?payload=' + settingPayload);
+    const text = await res.text();
+    try { return JSON.parse(text); } catch(e){ return {ok:false,error:text}; }
+  })();;
   if(r.ok){
     st.textContent='Setting tersimpan.'; st.style.color='var(--hijau2)';
   } else {
