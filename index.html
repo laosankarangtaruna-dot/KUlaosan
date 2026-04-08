@@ -952,7 +952,7 @@ async function loadAll(){
 /* ═══════════════════════════════════════
    SETTING & INIT
 ═══════════════════════════════════════ */
-function simpanSetting(){
+async function simpanSetting(){
   CFG.kelompok = document.getElementById('cfg-kelompok').value.trim();
   const bulan = document.getElementById('cfg-bulan').value;
   const tahun = parseInt(document.getElementById('cfg-tahun').value) || 2025;
@@ -960,15 +960,20 @@ function simpanSetting(){
   _pd.t = tahun;
   const inputUrl = document.getElementById('cfg-url').value.trim();
   if(inputUrl) GAS_URL = inputUrl;
+  const st=document.getElementById('cfg-status');
+  st.textContent='Menyimpan...'; st.style.color='#e67e22'; st.style.display='block';
   // Simpan ke Google Sheet
-  apiPost({ action:'saveSetting', data:{
+  const r = await apiPost({ action:'saveSetting', data:{
     kelompok: CFG.kelompok,
     bulan: bulan,
     tahun: String(tahun),
     gasUrl: GAS_URL
   }});
-  const st=document.getElementById('cfg-status');
-  st.textContent='Setting tersimpan. Memuat data...'; st.style.color='var(--hijau2)'; st.style.display='block';
+  if(r.ok){
+    st.textContent='Setting tersimpan.'; st.style.color='var(--hijau2)';
+  } else {
+    st.textContent='Error: '+r.error; st.style.color='#c0392b';
+  }
   setTimeout(()=>st.style.display='none',3000);
   updateLabels();
   loadAll();
