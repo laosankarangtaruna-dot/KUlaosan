@@ -85,6 +85,7 @@ footer{text-align:center;padding:16px;font-size:11px;color:#888;border-top:1px s
   <button class="tab" onclick="showTab('kas',this)">Buku Kas</button>
   <button class="tab" onclick="showTab('lapkas',this)">Laporan Kas</button>
   <button class="tab" onclick="showTab('setting',this)">Setting</button>
+  <button class="tab" onclick="showTab('kelas',this)">Kelas</button>
 </div>
 
 <!-- ══ PANEL DATA JAMAAH ══ -->
@@ -192,6 +193,19 @@ footer{text-align:center;padding:16px;font-size:11px;color:#888;border-top:1px s
     <button onclick="simpanSetting()" class="btn btn-p" style="align-self:flex-start;padding:8px 24px">Simpan Setting</button>
     <div id="cfg-status" style="font-size:12px;display:none"></div>
   </div>
+</div>
+
+<!-- ══ PANEL KELAS ══ -->
+<div id="p-kelas" class="panel">
+  <div class="ptitle">Kelas Setoran</div>
+  <div class="psub">Buat kelas, tentukan nominal, lalu pilih anggota yang masuk kelas tersebut</div>
+  <div class="divider"></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
+    <button class="btn btn-p" onclick="tambahKelas()" style="background:var(--hijau2)">+ Tambah Kelas</button>
+    <button class="btn btn-p" onclick="simpanKelas()">Simpan Kelas</button>
+    <span id="kelas-status" style="font-size:12px;color:var(--hijau2);display:none"></span>
+  </div>
+  <div id="kelas-cards" style="display:flex;flex-direction:column;gap:16px"></div>
 </div>
 
 <footer id="footer-text">Laporan Keuangan Kelompok</footer>
@@ -931,6 +945,8 @@ async function loadAll(){
   pasangFormatter(document.getElementById('t3'));
   recalc1();
   hideLoading();
+  await loadKelas();
+  terapkanKelasKeData();
 }
 
 /* ═══════════════════════════════════════
@@ -987,6 +1003,229 @@ async function init(){
   loadAll();
 }
 init();
+</script>
+
+<script>
+/* ═══════════════════════════════════════
+   KELAS SETORAN
+═══════════════════════════════════════ */
+let _kelasList = [];
+
+const KELAS_KOLOM_DEF = [
+  {key:'sudr',label:'SUDR'},{key:'ypk',label:'YPK'},{key:'donpns',label:'DONATUR PNS'},
+  {key:'jatdes',label:'JATAH DESA'},{key:'suds',label:'SUDS'},{key:'satpam',label:'SATPAM'},
+  {key:'asad',label:'ASAD'},{key:'tanah',label:'TANAH/KK'},{key:'dapur',label:'DAPUR'},
+  {key:'sdqremaja',label:'SDQ REMAJA'},{key:'bata',label:'BATA MERAH'},{key:'stia',label:'STIA'},
+  {key:'rt',label:'RT'},{key:'tk',label:'TK'},{key:'sym',label:'SYM'},
+  {key:'ytm',label:'YTM'},{key:'or_col',label:'OR'},{key:'danasehat',label:'DANA SEHAT'},{key:'tpk',label:'TPK'},
+];
+
+const COLS_IDX = {
+  sudr:7,ypk:8,donpns:9,jatdes:10,suds:11,satpam:12,
+  asad:13,tanah:14,dapur:15,sdqremaja:16,bata:17,stia:18,
+  rt:19,tk:20,sym:21,ytm:22,or_col:23,danasehat:24,tpk:25
+};
+
+function getNamaJamaah(){
+  const names=[];
+  document.getElementById('b1').querySelectorAll('tr:not(.rt)').forEach(row=>{
+    const nama=(row.querySelectorAll('td')[5]?.querySelector('[contenteditable]')?.textContent||'').trim();
+    if(nama) names.push(nama);
+  });
+  return names;
+}
+
+function renderKelas(){
+  const container=document.getElementById('kelas-cards');
+  container.innerHTML='';
+  const semuaNama=getNamaJamaah();
+
+  _kelasList.forEach((k,idx)=>{
+    const card=document.createElement('div');
+    card.style.cssText='background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;max-width:900px';
+
+    // Header: nama, nominal, hapus
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap';
+
+    const inpNama=document.createElement('input');
+    inpNama.type='text';inpNama.value=k.nama||'';inpNama.placeholder='Nama kelas...';
+    inpNama.style.cssText='padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;width:150px;font-weight:600';
+    inpNama.addEventListener('input',()=>{ _kelasList[idx].nama=inpNama.value.trim(); });
+    hdr.appendChild(inpNama);
+
+    const lblNom=document.createElement('span');
+    lblNom.textContent='Nominal:';lblNom.style.cssText='font-size:12px;font-weight:600;color:var(--hijau)';
+    hdr.appendChild(lblNom);
+
+    const inpNom=document.createElement('input');
+    inpNom.type='number';inpNom.value=k.nominal||0;inpNom.min=0;
+    inpNom.style.cssText='padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;width:120px;text-align:right';
+    inpNom.addEventListener('input',()=>{ _kelasList[idx].nominal=parseFloat(inpNom.value)||0; });
+    hdr.appendChild(inpNom);
+
+    const btnDel=document.createElement('button');
+    btnDel.textContent='Hapus';btnDel.className='btn btn-r';
+    btnDel.style.cssText='margin-left:auto;padding:4px 12px;font-size:11px';
+    btnDel.onclick=()=>{ _kelasList.splice(idx,1); renderKelas(); };
+    hdr.appendChild(btnDel);
+    card.appendChild(hdr);
+
+    // Body: pilih kolom | pilih anggota
+    const body=document.createElement('div');
+    body.style.cssText='display:flex;gap:16px;align-items:flex-start';
+
+    // Panel kolom
+    const panelKol=document.createElement('div');panelKol.style.cssText='flex:1;min-width:220px';
+    const lblKol=document.createElement('div');lblKol.textContent='Kolom yang Diisi:';
+    lblKol.style.cssText='font-size:11.5px;font-weight:700;color:var(--hijau);margin-bottom:6px';
+    panelKol.appendChild(lblKol);
+
+    const allKeys=KELAS_KOLOM_DEF.map(d=>d.key);
+    const allChecked=allKeys.every(k2=>(_kelasList[idx].kolom||[]).includes(k2));
+    const btnAll=document.createElement('button');
+    btnAll.textContent=allChecked?'Hapus Semua':'Pilih Semua';btnAll.className='btn btn-p';
+    btnAll.style.cssText='padding:3px 10px;font-size:10px;margin-bottom:8px;width:100%;background:'+(allChecked?'#c0392b':'var(--hijau2)');
+    btnAll.onclick=()=>{ _kelasList[idx].kolom=allChecked?[]:[...allKeys]; renderKelas(); };
+    panelKol.appendChild(btnAll);
+
+    const gridKol=document.createElement('div');
+    gridKol.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;padding:10px;background:#f0f4ff;border:1px solid #c0c8e8;border-radius:6px';
+    KELAS_KOLOM_DEF.forEach(def=>{
+      const lbl=document.createElement('label');
+      lbl.style.cssText='display:flex;align-items:center;gap:5px;font-size:11.5px;cursor:pointer;padding:3px 4px;border-radius:4px';
+      const cb=document.createElement('input');cb.type='checkbox';cb.value=def.key;
+      cb.checked=(_kelasList[idx].kolom||[]).includes(def.key);cb.style.accentColor='var(--hijau)';
+      cb.addEventListener('change',()=>{
+        if(!_kelasList[idx].kolom) _kelasList[idx].kolom=[];
+        if(cb.checked){ if(!_kelasList[idx].kolom.includes(def.key)) _kelasList[idx].kolom.push(def.key); }
+        else { _kelasList[idx].kolom=_kelasList[idx].kolom.filter(c=>c!==def.key); }
+      });
+      lbl.appendChild(cb);lbl.appendChild(document.createTextNode(def.label));
+      gridKol.appendChild(lbl);
+    });
+    panelKol.appendChild(gridKol);body.appendChild(panelKol);
+
+    // Divider
+    const dv=document.createElement('div');dv.style.cssText='width:1px;background:var(--border);align-self:stretch';
+    body.appendChild(dv);
+
+    // Panel anggota
+    const panelAng=document.createElement('div');panelAng.style.cssText='width:200px;flex-shrink:0';
+    const lblAng=document.createElement('div');lblAng.textContent='Anggota:';
+    lblAng.style.cssText='font-size:11.5px;font-weight:700;color:var(--hijau);margin-bottom:6px';
+    panelAng.appendChild(lblAng);
+
+    const semuaDipilih=semuaNama.length>0&&semuaNama.every(n=>(_kelasList[idx].anggota||[]).includes(n));
+    const btnAllAng=document.createElement('button');
+    btnAllAng.textContent=semuaDipilih?'Hapus Semua':'Pilih Semua';btnAllAng.className='btn btn-p';
+    btnAllAng.style.cssText='padding:3px 10px;font-size:10px;margin-bottom:4px;width:100%;background:'+(semuaDipilih?'#c0392b':'var(--hijau2)');
+    btnAllAng.onclick=()=>{ _kelasList[idx].anggota=semuaDipilih?[]:[...semuaNama]; renderKelas(); };
+    panelAng.appendChild(btnAllAng);
+
+    const btnKK=document.createElement('button');btnKK.textContent='Pilih KK Saja';btnKK.className='btn btn-p';
+    btnKK.style.cssText='padding:3px 10px;font-size:10px;margin-bottom:8px;width:100%;background:var(--hijau)';
+    btnKK.onclick=()=>{
+      const namaKK=[];
+      document.getElementById('b1').querySelectorAll('tr:not(.rt)').forEach(row=>{
+        const td=row.querySelectorAll('td');
+        if(td[3]?.dataset.checked==='1'){
+          const n=(td[5]?.querySelector('[contenteditable]')?.textContent||'').trim();
+          if(n) namaKK.push(n);
+        }
+      });
+      _kelasList[idx].anggota=namaKK; renderKelas();
+    };
+    panelAng.appendChild(btnKK);
+
+    const gridAng=document.createElement('div');
+    gridAng.style.cssText='display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto;padding:8px 10px;background:#f9f5ee;border:1px solid var(--border);border-radius:6px';
+    if(!semuaNama.length){
+      const info=document.createElement('span');info.textContent='Isi nama di Data Jamaah dulu';
+      info.style.cssText='font-size:11px;color:#aaa;font-style:italic';gridAng.appendChild(info);
+    } else {
+      semuaNama.forEach(nama=>{
+        const lbl=document.createElement('label');
+        lbl.style.cssText='display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:2px 4px;border-radius:4px';
+        const cb=document.createElement('input');cb.type='checkbox';cb.value=nama;
+        cb.checked=(_kelasList[idx].anggota||[]).includes(nama);cb.style.accentColor='var(--hijau)';
+        cb.addEventListener('change',()=>{
+          if(!_kelasList[idx].anggota) _kelasList[idx].anggota=[];
+          if(cb.checked){ if(!_kelasList[idx].anggota.includes(nama)) _kelasList[idx].anggota.push(nama); }
+          else { _kelasList[idx].anggota=_kelasList[idx].anggota.filter(n=>n!==nama); }
+        });
+        lbl.appendChild(cb);lbl.appendChild(document.createTextNode(nama));gridAng.appendChild(lbl);
+      });
+    }
+    panelAng.appendChild(gridAng);body.appendChild(panelAng);
+    card.appendChild(body);container.appendChild(card);
+  });
+}
+
+function tambahKelas(){ _kelasList.push({nama:'',nominal:0,kolom:[],anggota:[]}); renderKelas(); }
+
+async function simpanKelas(){
+  const kelompok=CFG.kelompok;
+  const rows=_kelasList.map((k,i)=>({
+    kelompok, urutan:i+1, nama:k.nama||'', nominal:k.nominal||0,
+    kolom:(k.kolom||[]).join(','),
+    anggota:(k.anggota||[]).join('|'),
+    updated_at:new Date().toISOString()
+  }));
+  const r=await apiPost({action:'save',sheet:'kelas_setoran',kelompok,periode:'_',rows});
+  const st=document.getElementById('kelas-status');
+  st.textContent=r.ok?'Tersimpan':'Error: '+r.error;
+  st.style.color=r.ok?'var(--hijau2)':'#c0392b';
+  st.style.display='block';
+  setTimeout(()=>st.style.display='none',2500);
+  if(r.ok) terapkanKelasKeData();
+}
+
+async function loadKelas(){
+  const r=await api({action:'load',sheet:'kelas_setoran',kelompok:CFG.kelompok,periode:'_'});
+  if(r.ok && r.data.length){
+    _kelasList=r.data.sort((a,b)=>a.urutan-b.urutan).map(k=>({
+      nama:k.nama, nominal:parseFloat(k.nominal)||0,
+      kolom:k.kolom?k.kolom.split(',').filter(Boolean):[],
+      anggota:k.anggota?k.anggota.split('|').filter(Boolean):[],
+    }));
+  }
+  renderKelas();
+}
+
+function terapkanKelasKeData(){
+  const allKeys=KELAS_KOLOM_DEF.map(d=>d.key);
+  const kolomDiatur=new Set();
+  _kelasList.forEach(k=>{ (k.kolom&&k.kolom.length?k.kolom:allKeys).forEach(c=>kolomDiatur.add(c)); });
+
+  document.getElementById('b1').querySelectorAll('tr:not(.rt)').forEach(row=>{
+    const td=row.querySelectorAll('td');
+    kolomDiatur.forEach(col=>{ const el=td[COLS_IDX[col]]?.querySelector('[contenteditable]'); if(el) el.textContent=''; });
+  });
+
+  const namaToKelas={};
+  _kelasList.forEach(k=>{
+    (k.anggota||[]).forEach(nama=>{
+      if(!namaToKelas[nama]) namaToKelas[nama]=[];
+      namaToKelas[nama].push({nominal:k.nominal||0,kolom:k.kolom&&k.kolom.length?k.kolom:allKeys});
+    });
+  });
+
+  document.getElementById('b1').querySelectorAll('tr:not(.rt)').forEach(row=>{
+    const td=row.querySelectorAll('td');
+    const nama=(td[5]?.querySelector('[contenteditable]')?.textContent||'').trim();
+    if(!nama||!namaToKelas[nama]) return;
+    const setor=getNum(td[0]), ir=getNum(td[6]), sisa=setor-ir;
+    namaToKelas[nama].forEach(({nominal,kolom})=>{
+      const isi=sisa>=nominal?nominal:0;
+      kolom.forEach(col=>{
+        const el=td[COLS_IDX[col]]?.querySelector('[contenteditable]');
+        if(el) el.textContent=isi>0?fmt(isi):'';
+      });
+    });
+  });
+  recalc1();
+}
 </script>
 </body>
 </html>
