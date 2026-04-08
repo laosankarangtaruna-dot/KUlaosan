@@ -1188,6 +1188,7 @@ async function simpanKelas(){
 
 async function loadKelas(){
   const r=await api({action:'load',sheet:'kelas_setoran',kelompok:CFG.kelompok,periode:'_'});
+  console.log('loadKelas kelompok:', CFG.kelompok, '| result:', JSON.stringify(r).substring(0,200));
   if(r.ok && r.data.length){
     _kelasList=r.data.sort((a,b)=>a.urutan-b.urutan).map(k=>({
       nama:k.nama, nominal:parseFloat(k.nominal)||0,
