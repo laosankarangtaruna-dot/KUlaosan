@@ -1180,7 +1180,7 @@ async function simpanKelas(){
     updated_at:new Date().toISOString()
   }));
   console.log('simpanKelas kelompok:', kelompok, '| rows:', rows.length);
-  const payload = encodeURIComponent(JSON.stringify({action:'save',sheet:'kelas_setoran',kelompok,periode:'_',rows}));
+  const payload = encodeURIComponent(JSON.stringify({action:'save',sheet:'kelas_setoran',kelompok,periode:'',rows}));
   const res = await fetch(GAS_URL + '?payload=' + payload);
   const text = await res.text();
   let r; try{ r=JSON.parse(text); }catch(e){ r={ok:false,error:text}; }
@@ -1193,7 +1193,11 @@ async function simpanKelas(){
 }
 
 async function loadKelas(){
-  const r=await api({action:'load',sheet:'kelas_setoran',kelompok:CFG.kelompok,periode:'_'});
+  // Coba load dengan periode '_' dulu, kalau kosong coba dengan periode ''
+  let r=await api({action:'load',sheet:'kelas_setoran',kelompok:CFG.kelompok,periode:'_'});
+  if(!r.ok || !r.data.length){
+    r=await api({action:'load',sheet:'kelas_setoran',kelompok:CFG.kelompok,periode:''});
+  }
   console.log('loadKelas kelompok:', CFG.kelompok, '| result:', JSON.stringify(r).substring(0,300));
   if(r.ok && r.data.length){
     _kelasList=r.data.sort((a,b)=>a.urutan-b.urutan).map(k=>({
