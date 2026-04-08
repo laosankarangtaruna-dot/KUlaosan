@@ -203,7 +203,6 @@ footer{text-align:center;padding:16px;font-size:11px;color:#888;border-top:1px s
   <div class="divider"></div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
     <button class="btn btn-p" onclick="tambahKelas()" style="background:var(--hijau2)">+ Tambah Kelas</button>
-    <button class="btn btn-p" onclick="simpanKelas()">Simpan Kelas</button>
     <span id="kelas-status" style="font-size:12px;color:var(--hijau2);display:none"></span>
   </div>
   <div id="kelas-cards" style="display:flex;flex-direction:column;gap:16px"></div>
@@ -825,6 +824,7 @@ const debounceSave1    = debounce(saveDataJamaah, 1500);
 const debounceSave2    = debounce(saveBukuKas, 1500);
 const debounceSave3    = debounce(saveLaporanKas, 1500);
 const debounceSaveSaldo= debounce(saveSaldoAwal, 1000);
+const debounceSaveKelas= debounce(()=>simpanKelas(), 1500);
 
 async function saveDataJamaah(){
   if(!GAS_URL){ showStatus('URL belum diset','#c0392b'); return; }
@@ -1104,7 +1104,7 @@ function renderKelas(){
     const inpNama=document.createElement('input');
     inpNama.type='text';inpNama.value=k.nama||'';inpNama.placeholder='Nama kelas...';
     inpNama.style.cssText='padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;width:150px;font-weight:600';
-    inpNama.addEventListener('input',()=>{ _kelasList[idx].nama=inpNama.value.trim(); });
+    inpNama.addEventListener('input',()=>{ _kelasList[idx].nama=inpNama.value.trim(); debounceSaveKelas(); });
     hdr.appendChild(inpNama);
 
     const lblNom=document.createElement('span');
@@ -1114,13 +1114,13 @@ function renderKelas(){
     const inpNom=document.createElement('input');
     inpNom.type='number';inpNom.value=k.nominal||0;inpNom.min=0;
     inpNom.style.cssText='padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;width:120px;text-align:right';
-    inpNom.addEventListener('input',()=>{ _kelasList[idx].nominal=parseFloat(inpNom.value)||0; });
+    inpNom.addEventListener('input',()=>{ _kelasList[idx].nominal=parseFloat(inpNom.value)||0; debounceSaveKelas(); });
     hdr.appendChild(inpNom);
 
     const btnDel=document.createElement('button');
     btnDel.textContent='Hapus';btnDel.className='btn btn-r';
     btnDel.style.cssText='margin-left:auto;padding:4px 12px;font-size:11px';
-    btnDel.onclick=()=>{ _kelasList.splice(idx,1); renderKelas(); };
+    btnDel.onclick=()=>{ _kelasList.splice(idx,1); renderKelas(); debounceSaveKelas(); };
     hdr.appendChild(btnDel);
     card.appendChild(hdr);
 
@@ -1139,7 +1139,7 @@ function renderKelas(){
     const btnAll=document.createElement('button');
     btnAll.textContent=allChecked?'Hapus Semua':'Pilih Semua';btnAll.className='btn btn-p';
     btnAll.style.cssText='padding:3px 10px;font-size:10px;margin-bottom:8px;width:100%;background:'+(allChecked?'#c0392b':'var(--hijau2)');
-    btnAll.onclick=()=>{ _kelasList[idx].kolom=allChecked?[]:[...allKeys]; renderKelas(); };
+    btnAll.onclick=()=>{ _kelasList[idx].kolom=allChecked?[]:[...allKeys]; renderKelas(); debounceSaveKelas(); };
     panelKol.appendChild(btnAll);
 
     const gridKol=document.createElement('div');
@@ -1153,6 +1153,7 @@ function renderKelas(){
         if(!_kelasList[idx].kolom) _kelasList[idx].kolom=[];
         if(cb.checked){ if(!_kelasList[idx].kolom.includes(def.key)) _kelasList[idx].kolom.push(def.key); }
         else { _kelasList[idx].kolom=_kelasList[idx].kolom.filter(c=>c!==def.key); }
+        debounceSaveKelas();
       });
       lbl.appendChild(cb);lbl.appendChild(document.createTextNode(def.label));
       gridKol.appendChild(lbl);
@@ -1173,7 +1174,7 @@ function renderKelas(){
     const btnAllAng=document.createElement('button');
     btnAllAng.textContent=semuaDipilih?'Hapus Semua':'Pilih Semua';btnAllAng.className='btn btn-p';
     btnAllAng.style.cssText='padding:3px 10px;font-size:10px;margin-bottom:4px;width:100%;background:'+(semuaDipilih?'#c0392b':'var(--hijau2)');
-    btnAllAng.onclick=()=>{ _kelasList[idx].anggota=semuaDipilih?[]:[...semuaNama]; renderKelas(); };
+    btnAllAng.onclick=()=>{ _kelasList[idx].anggota=semuaDipilih?[]:[...semuaNama]; renderKelas(); debounceSaveKelas(); };
     panelAng.appendChild(btnAllAng);
 
     const btnKK=document.createElement('button');btnKK.textContent='Pilih KK Saja';btnKK.className='btn btn-p';
@@ -1187,7 +1188,7 @@ function renderKelas(){
           if(n) namaKK.push(n);
         }
       });
-      _kelasList[idx].anggota=namaKK; renderKelas();
+      _kelasList[idx].anggota=namaKK; renderKelas(); debounceSaveKelas();
     };
     panelAng.appendChild(btnKK);
 
@@ -1206,6 +1207,7 @@ function renderKelas(){
           if(!_kelasList[idx].anggota) _kelasList[idx].anggota=[];
           if(cb.checked){ if(!_kelasList[idx].anggota.includes(nama)) _kelasList[idx].anggota.push(nama); }
           else { _kelasList[idx].anggota=_kelasList[idx].anggota.filter(n=>n!==nama); }
+          debounceSaveKelas();
         });
         lbl.appendChild(cb);lbl.appendChild(document.createTextNode(nama));gridAng.appendChild(lbl);
       });
@@ -1215,7 +1217,7 @@ function renderKelas(){
   });
 }
 
-function tambahKelas(){ _kelasList.push({nama:'',nominal:0,kolom:[],anggota:[]}); renderKelas(); }
+function tambahKelas(){ _kelasList.push({nama:'',nominal:0,kolom:[],anggota:[]}); renderKelas(); debounceSaveKelas(); }
 
 async function simpanKelas(){
   const kelompok=CFG.kelompok;
