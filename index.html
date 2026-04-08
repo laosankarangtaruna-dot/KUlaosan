@@ -1007,7 +1007,7 @@ async function init(){
   updateLabels();
   loadAll();
 }
-init();
+// init() dipanggil setelah semua script dimuat — lihat akhir file
 </script>
 
 <script>
@@ -1230,6 +1230,9 @@ function terapkanKelasKeData(){
   });
   recalc1();
 }
+
+// Panggil init setelah semua fungsi terdefinisi
+init();
 </script>
 </body>
 </html>
