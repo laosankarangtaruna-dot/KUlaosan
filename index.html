@@ -200,7 +200,7 @@ let _pd = { b: 11, t: 2025 }; // bulan 0-indexed
 
 function getPeriode(){ return BULAN[_pd.b] + ' ' + _pd.t; }
 
-// Semua request pakai GET — GAS hanya support GET untuk cross-origin
+// GET — untuk load data
 async function api(params){
   if(!GAS_URL) return { ok: false, error: 'URL belum diset. Buka tab Setting.' };
   const url = GAS_URL + '?' + new URLSearchParams(params);
@@ -210,11 +210,14 @@ async function api(params){
   catch(e){ return { ok:false, error:'Response bukan JSON: '+text.substring(0,200) }; }
 }
 
-// Save: kirim data lewat GET dengan payload JSON di-encode
+// POST — untuk save data (hindari URL terlalu panjang)
 async function apiPost(body){
   if(!GAS_URL) return { ok: false, error: 'URL belum diset. Buka tab Setting.' };
-  const url = GAS_URL + '?payload=' + encodeURIComponent(JSON.stringify(body));
-  const res = await fetch(url);
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // pakai text/plain agar tidak trigger CORS preflight
+    body: JSON.stringify(body)
+  });
   const text = await res.text();
   try { return JSON.parse(text); }
   catch(e){ return { ok:false, error:'Response bukan JSON: '+text.substring(0,200) }; }
