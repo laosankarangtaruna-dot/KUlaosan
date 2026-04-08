@@ -30,26 +30,35 @@ async function api(params){
 // Save dengan chunking otomatis — kirim 5 baris per request
 async function apiPost(body){
   if(!GAS_URL) return { ok:false, error:'URL belum diset.' };
-  try {
-    // Kirim lewat POST — GAS handle delete+insert sekaligus
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(body)
-    });
-    const text = await res.text();
-    try { return JSON.parse(text); } catch(e){ return { ok:false, error:text.substring(0,200) }; }
-  } catch(e){
-    // Fallback ke GET jika POST gagal (CORS)
+  // Coba POST dulu, retry sekali jika gagal karena error sementara Google
+  for(let attempt=0; attempt<2; attempt++){
     try {
-      const payload = encodeURIComponent(JSON.stringify(body));
-      const res2 = await fetch(GAS_URL + '?payload=' + payload);
-      const text2 = await res2.text();
-      try { return JSON.parse(text2); } catch(e2){ return { ok:false, error:text2.substring(0,200) }; }
-    } catch(e2){
-      return { ok:false, error:'Fetch error: '+e2.message };
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(body)
+      });
+      const text = await res.text();
+      try {
+        const r = JSON.parse(text);
+        // Jika error sementara Google, retry
+        if(!r.ok && r.error && r.error.includes('gagal') && attempt===0) continue;
+        return r;
+      } catch(e){ return { ok:false, error:text.substring(0,200) }; }
+    } catch(e){
+      if(attempt===0) continue; // retry sekali
+      // Fallback ke GET jika POST gagal (CORS)
+      try {
+        const payload = encodeURIComponent(JSON.stringify(body));
+        const res2 = await fetch(GAS_URL + '?payload=' + payload);
+        const text2 = await res2.text();
+        try { return JSON.parse(text2); } catch(e2){ return { ok:false, error:text2.substring(0,200) }; }
+      } catch(e2){
+        return { ok:false, error:'Fetch error: '+e2.message };
+      }
     }
   }
+  return { ok:false, error:'Gagal setelah retry' };
 }
 
 function fmt(n){ return isNaN(n)||n===0 ? '0' : Math.round(n).toLocaleString('id-ID'); }
