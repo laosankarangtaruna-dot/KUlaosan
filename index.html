@@ -495,6 +495,8 @@ function recalc1(){
   const jTPK=document.getElementById('jTPK'); if(jTPK) jTPK.textContent=fmt(totals.TPK);
 
   recalc2(); recalc3();
+  // Terapkan kelas setiap kali data berubah (cek SETOR)
+  if(typeof terapkanKelasKeData === 'function') terapkanKelasKeData();
 }
 
 function tambahKK(){
@@ -1269,10 +1271,13 @@ function terapkanKelasKeData(){
     const td=row.querySelectorAll('td');
     const nama=(td[5]?.querySelector('[contenteditable]')?.textContent||'').trim();
     if(!nama||!namaToKelas[nama]) return;
+    const setor=getNum(td[0]);
     namaToKelas[nama].forEach(({nominal,kolom})=>{
+      // Hanya isi jika SETOR sudah diisi
+      const isi = setor > 0 ? nominal : 0;
       kolom.forEach(col=>{
         const el=td[COLS_IDX[col]]?.querySelector('[contenteditable]');
-        if(el) el.textContent=nominal>0?fmt(nominal):'';
+        if(el) el.textContent=isi>0?fmt(isi):'';
       });
     });
   });
