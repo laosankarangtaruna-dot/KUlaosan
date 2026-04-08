@@ -238,8 +238,11 @@ async function api(params){
 async function apiPost(body){
   if(!GAS_URL) return { ok: false, error: 'URL belum diset. Buka tab Setting.' };
   try {
-    const payload = encodeURIComponent(JSON.stringify(body));
-    const res = await fetch(GAS_URL + '?payload=' + payload);
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body)
+    });
     const text = await res.text();
     console.log('apiPost response:', text.substring(0,300));
     try { return JSON.parse(text); }
