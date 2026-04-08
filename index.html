@@ -412,7 +412,14 @@ function buatBarisJamaah(isKK=false){
   // JUMLAH (td[29]) auto
   row.appendChild(tdVal('auto','','0'));
 
-  row.addEventListener('input',()=>{ recalc1(); debounceSave1(); });
+  row.addEventListener('input', e=>{
+    recalc1();
+    const td = e.target.closest('td');
+    if(td === row.querySelectorAll('td')[0]){
+      if(typeof terapkanKelasKeData === 'function') terapkanKelasKeData();
+    }
+    debounceSave1();
+  });
   row.addEventListener('contextmenu',e=>{
     e.preventDefault();
     showCtx(e,[
@@ -495,8 +502,6 @@ function recalc1(){
   const jTPK=document.getElementById('jTPK'); if(jTPK) jTPK.textContent=fmt(totals.TPK);
 
   recalc2(); recalc3();
-  // Terapkan kelas setiap kali data berubah (cek SETOR)
-  if(typeof terapkanKelasKeData === 'function') terapkanKelasKeData();
 }
 
 function tambahKK(){
