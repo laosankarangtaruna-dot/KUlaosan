@@ -998,8 +998,8 @@ function resetAll(){
 // Init — load setting dari Google Sheet dulu, baru load data
 document.getElementById('cfg-url').value = GAS_URL;
 async function init(){
-  // Load setting dari sheet
   const r = await api({ action:'loadSetting' });
+  console.log('loadSetting result:', JSON.stringify(r));
   if(r.ok && r.data){
     const s = r.data;
     if(s.kelompok){ CFG.kelompok = s.kelompok; document.getElementById('cfg-kelompok').value = s.kelompok; }
