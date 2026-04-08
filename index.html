@@ -235,14 +235,28 @@ async function api(params){
 }
 
 // POST — untuk save data (hindari URL terlalu panjang)
+// GET dengan payload — otomatis chunk jika data terlalu besar
 async function apiPost(body){
-  if(!GAS_URL) return { ok: false, error: 'URL belum diset. Buka tab Setting.' };
+  if(!GAS_URL) return { ok: false, error: 'URL belum diset.' };
   try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(body)
-    });
+    // Jika ada rows dan banyak, kirim per batch 10 baris
+    if(body.rows && body.rows.length > 10){
+      const chunks = [];
+      for(let i=0; i<body.rows.length; i+=10) chunks.push(body.rows.slice(i,i+10));
+      // Hapus dulu semua data lama (kirim rows kosong)
+      const delPayload = encodeURIComponent(JSON.stringify({...body, rows:[]}));
+      await fetch(GAS_URL + '?payload=' + delPayload);
+      // Kirim tiap chunk dengan action upsert (tidak hapus lagi)
+      for(const chunk of chunks){
+        const p = encodeURIComponent(JSON.stringify({...body, rows:chunk, noDelete:true}));
+        const res = await fetch(GAS_URL + '?payload=' + p);
+        const text = await res.text();
+        try { const r=JSON.parse(text); if(!r.ok) return r; } catch(e){}
+      }
+      return { ok:true, data:{ saved: body.rows.length } };
+    }
+    const payload = encodeURIComponent(JSON.stringify(body));
+    const res = await fetch(GAS_URL + '?payload=' + payload);
     const text = await res.text();
     console.log('apiPost response:', text.substring(0,300));
     try { return JSON.parse(text); }
