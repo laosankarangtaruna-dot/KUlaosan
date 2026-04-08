@@ -399,7 +399,26 @@ function downloadExcel(){
     judulBaris.forEach((teks,ri)=>{const row=[teks];for(let c=1;c<totalCols;c++) row.push('');aoa.push(row);styles.push(row.map(()=>S_JUDUL));merges.push({s:{r:ri,c:0},e:{r:ri,c:totalCols-1}});});
     aoa.push(Array(totalCols).fill(''));styles.push(Array(totalCols).fill(S_DATA));
     tbl.querySelectorAll('thead tr').forEach(tr=>{const row=[],srow=[];let ci=0;tr.querySelectorAll('th').forEach(th=>{const span=parseInt(th.colSpan)||1;if(!skipCols.includes(ci)){row.push(th.textContent.trim());srow.push(S_HDR);for(let s=1;s<span;s++){row.push('');srow.push(S_HDR);}}ci+=span;});if(row.length){aoa.push(row);styles.push(srow);}});
-    tbl.querySelectorAll('tbody tr').forEach(tr=>{const tds=tr.querySelectorAll('td');if(!tds.length) return;const row=[],srow=[];const isTotal=tr.className.includes('rt')||tr.className.includes('rs')||tr.className.includes('rsa');const isLabel=tr.className.includes('rl')||tr.className.includes('rj');if(isLabel){for(let c=0;c<totalCols;c++){row.push('');srow.push(S_DATA);}let lbl='';tds.forEach(td=>{const t=(td.querySelector('[contenteditable]')?.textContent||td.textContent||'').trim();if(t&&!lbl) lbl=t;});row[1]=lbl;srow[1]={font:{bold:true},fill:{fgColor:{rgb:'DFF0DF'}},border:BORDER,alignment:{vertical:'center'}};aoa.push(row);styles.push(srow);return;}let ci=0;tds.forEach(td=>{const span=parseInt(td.colSpan)||1;if(!skipCols.includes(ci)){const ce=td.querySelector('[contenteditable]');const raw=ce?(ce.textContent||'').trim():(td.textContent||'').trim();const n=parseFloat(raw.replace(/\./g,'').replace(',','.'));const val=(raw!==''&&!isNaN(n))?n:raw;let st=isTotal?S_TOT:td.className.includes('form')||td.className.includes('ref')||td.className.includes('auto')?S_FORM:typeof val==='number'?S_DATAR:S_DATA;row.push(val);srow.push(st);for(let s=1;s<span;s++){row.push('');srow.push(st);}}ci+=span;});if(row.some(c=>c!==''&&c!==null&&c!==undefined)){aoa.push(row);styles.push(srow);}});
+    tbl.querySelectorAll('tbody tr').forEach(tr=>{const tds=tr.querySelectorAll('td');if(!tds.length) return;const row=[],srow=[];const isTotal=tr.className.includes('rt')||tr.className.includes('rs')||tr.className.includes('rsa');const isLabel=tr.className.includes('rl')||tr.className.includes('rj');if(isLabel){for(let c=0;c<totalCols;c++){row.push('');srow.push(S_DATA);}let lbl='';tds.forEach(td=>{const t=(td.querySelector('[contenteditable]')?.textContent||td.textContent||'').trim();if(t&&!lbl) lbl=t;});row[1]=lbl;srow[1]={font:{bold:true},fill:{fgColor:{rgb:'DFF0DF'}},border:BORDER,alignment:{vertical:'center'}};aoa.push(row);styles.push(srow);return;}
+      // Untuk baris biasa: skip kolom sesuai skipCols, tapi hitung offset td dengan benar
+      let ci=0, tdIdx=0;
+      // Buat mapping: ci -> tdIdx (index td yang sebenarnya)
+      const tdMap=[]; // tdMap[ci] = index td
+      tds.forEach((td,i)=>{ const span=parseInt(td.colSpan)||1; for(let s=0;s<span;s++) tdMap[ci+s]=i; ci+=span; });
+      // Hitung kolom yang akan diexport (tidak di-skip)
+      let exportCi=0;
+      for(let c=0;c<(ci);c++){
+        if(skipCols.includes(c)) continue;
+        const tdI=tdMap[c]; if(tdI===undefined) continue;
+        const td=tds[tdI];
+        const ce=td.querySelector('[contenteditable]');
+        const raw=ce?(ce.textContent||'').trim():(td.textContent||'').trim();
+        const n=parseFloat(raw.replace(/\./g,'').replace(',','.'));
+        const val=(raw!==''&&!isNaN(n))?n:raw;
+        let st=isTotal?S_TOT:td.className.includes('form')||td.className.includes('ref')||td.className.includes('auto')?S_FORM:typeof val==='number'?S_DATAR:S_DATA;
+        row.push(val);srow.push(st);
+      }
+      if(row.some(c=>c!==''&&c!==null&&c!==undefined)){aoa.push(row);styles.push(srow);}});
     const ws=XLSX.utils.aoa_to_sheet(aoa);if(merges.length) ws['!merges']=merges;
     const range=XLSX.utils.decode_range(ws['!ref']||'A1');for(let R=range.s.r;R<=range.e.r;R++) for(let C=range.s.c;C<=range.e.c;C++){const addr=XLSX.utils.encode_cell({r:R,c:C});if(!ws[addr]) ws[addr]={t:'z',v:''};ws[addr].s=(styles[R]&&styles[R][C])||S_DATA;}
     const hdrRow=aoa[judulBaris.length+1]||[];ws['!cols']=hdrRow.map((h)=>{h=String(h||'').toUpperCase();let w=10;if(h==='NO'||h==='KK') w=5;else if(h.includes('NAMA')||h.includes('KETERANGAN')) w=30;else if(h.includes('DEBET')||h.includes('KREDIT')||h.includes('SALDO')) w=14;return{wch:w};});
