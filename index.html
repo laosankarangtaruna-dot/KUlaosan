@@ -387,10 +387,11 @@ function terapkanKelasKeData(){
 function downloadExcel(){
   const klp=CFG.kelompok||'Kelompok', per=getPeriode(), wb=XLSX.utils.book_new();
   const BORDER={top:{style:'thin',color:{rgb:'000000'}},bottom:{style:'thin',color:{rgb:'000000'}},left:{style:'thin',color:{rgb:'000000'}},right:{style:'thin',color:{rgb:'000000'}}};
+  const FMT_RP='"Rp "#,##0';
   const S_HDR={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:BORDER};
-  const S_DATA={alignment:{vertical:'center'},border:BORDER}, S_DATAR={alignment:{horizontal:'right',vertical:'center'},border:BORDER};
-  const S_FORM={font:{bold:true,color:{rgb:'1A5C30'}},fill:{fgColor:{rgb:'E8F5EF'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
-  const S_TOT={font:{bold:true,color:{rgb:'E8C97A'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
+  const S_DATA={alignment:{vertical:'center'},border:BORDER}, S_DATAR={numFmt:FMT_RP,alignment:{horizontal:'right',vertical:'center'},border:BORDER};
+  const S_FORM={numFmt:FMT_RP,font:{bold:true,color:{rgb:'1A5C30'}},fill:{fgColor:{rgb:'E8F5EF'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
+  const S_TOT={numFmt:FMT_RP,font:{bold:true,color:{rgb:'E8C97A'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
   const S_JUDUL={font:{bold:true,sz:13},alignment:{horizontal:'center',vertical:'center'},border:BORDER};
   function sheetDariTabel(tableId,skipCols=[],judulBaris=[]){
     const tbl=document.getElementById(tableId); if(!tbl) return XLSX.utils.aoa_to_sheet([]);
@@ -411,20 +412,17 @@ function downloadExcel(){
         aoa.push(row); styles.push(srow); return;
       }
       if(isTotal && !tr.className.includes('rs') && !tr.className.includes('rsa')){
-        // Baris JUMLAH: td[0] colSpan=6 = label, td[1..] = nilai total
-        // Setelah skip kolom 0,1 → label di kolom 0 (NO), merge 4 kolom (NO,KK,Angg,NAMA)
-        // Nilai total mulai dari kolom IR (index 4 setelah skip)
-        const labelTd=tds[0]; const labelTxt=(labelTd.textContent||'').trim();
+        const labelTxt=(tds[0]?.textContent||'').trim();
         for(let c=0;c<totalCols;c++){row.push('');srow.push(S_TOT);}
         row[0]=labelTxt;
-        // Merge kolom 0-3 untuk label JUMLAH
-        const rowIdx=aoa.length+judulBaris.length+2; // perkiraan baris di sheet
-        merges.push({s:{r:aoa.length,c:0},e:{r:aoa.length,c:3}});
-        // Isi nilai total dari td[1] dst, mulai di kolom 4 (setelah NO,KK,Angg,NAMA)
+        // Merge kolom 0-3 (NO, KK, Anggota, NAMA) — index baris = judul + kosong + header + data sejauh ini
+        const rIdx = aoa.length;
+        merges.push({s:{r:rIdx,c:0},e:{r:rIdx,c:3}});
+        // td[0] colSpan=6 → skip, td[1..] adalah nilai total kolom IR dst
+        // Kolom IR di Excel = index 4 (setelah NO,KK,Angg,NAMA)
         let colOut=4;
         for(let i=1;i<tds.length;i++){
-          const td=tds[i];
-          const raw=(td.textContent||'').trim();
+          const raw=(tds[i].textContent||'').trim();
           const n=parseFloat(raw.replace(/\./g,'').replace(',','.'));
           const val=(raw!==''&&!isNaN(n))?n:raw;
           if(colOut<totalCols){ row[colOut]=val; srow[colOut]=S_TOT; }
