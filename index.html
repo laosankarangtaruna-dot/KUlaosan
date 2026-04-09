@@ -430,6 +430,7 @@ function downloadExcel(){
         }
         aoa.push(row); styles.push(srow); return;
       }
+      let ci=0;
       const tdMap=[];
       tds.forEach((td,i)=>{ const span=parseInt(td.colSpan)||1; for(let s=0;s<span;s++) tdMap[ci+s]=i; ci+=span; });
       const maxCi=ci;
