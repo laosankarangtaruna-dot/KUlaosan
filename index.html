@@ -389,9 +389,9 @@ function downloadExcel(){
   const BORDER={top:{style:'thin',color:{rgb:'000000'}},bottom:{style:'thin',color:{rgb:'000000'}},left:{style:'thin',color:{rgb:'000000'}},right:{style:'thin',color:{rgb:'000000'}}};
   const FMT_RP='"Rp "#,##0';
   const S_HDR={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:BORDER};
-  const S_DATA={alignment:{vertical:'center'},border:BORDER}, S_DATAR={numFmt:FMT_RP,alignment:{horizontal:'right',vertical:'center'},border:BORDER};
-  const S_FORM={numFmt:FMT_RP,font:{bold:true,color:{rgb:'1A5C30'}},fill:{fgColor:{rgb:'E8F5EF'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
-  const S_TOT={numFmt:FMT_RP,font:{bold:true,color:{rgb:'E8C97A'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
+  const S_DATA={alignment:{vertical:'center'},border:BORDER}, S_DATAR={numFmt:FMT_RP,alignment:{horizontal:'center',vertical:'center'},border:BORDER};
+  const S_FORM={numFmt:FMT_RP,font:{bold:true,color:{rgb:'1A5C30'}},fill:{fgColor:{rgb:'E8F5EF'}},alignment:{horizontal:'center',vertical:'center'},border:BORDER};
+  const S_TOT={numFmt:FMT_RP,font:{bold:true,color:{rgb:'E8C97A'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'center',vertical:'center'},border:BORDER};
   const S_JUDUL={font:{bold:true,sz:13},alignment:{horizontal:'center',vertical:'center'},border:BORDER};
   function sheetDariTabel(tableId,skipCols=[],judulBaris=[]){
     const tbl=document.getElementById(tableId); if(!tbl) return XLSX.utils.aoa_to_sheet([]);
@@ -449,11 +449,12 @@ function downloadExcel(){
         // Kolom 0-3 output (NO,KK,Anggota,NAMA) tidak pakai format Rp
         const noRp = colOutIdx < 4;
         const isNumCell = td.className.includes('form')||td.className.includes('ref')||td.className.includes('auto');
+        const isNamaCol = colOutIdx === 3; // kolom NAMA (index 3 setelah skip)
         let st;
         if(isTotal) st=S_TOT;
-        else if(noRp) st=typeof val==='number'?{alignment:{horizontal:'right',vertical:'center'},border:BORDER}:S_DATA;
+        else if(noRp) st=typeof val==='number'?{alignment:{horizontal:'center',vertical:'center'},border:BORDER}:(isNamaCol?S_DATA:{alignment:{horizontal:'center',vertical:'center'},border:BORDER});
         else if(isNumCell) st=S_FORM;
-        else st=typeof val==='number'?S_DATAR:S_DATA;
+        else st=typeof val==='number'?S_DATAR:(isNamaCol?S_DATA:{alignment:{horizontal:'center',vertical:'center'},border:BORDER});
         row.push(val); srow.push(st); colOutIdx++;
       }
       if(row.some(c=>c!==''&&c!==null&&c!==undefined)){aoa.push(row);styles.push(srow);}
