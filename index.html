@@ -387,7 +387,7 @@ function terapkanKelasKeData(){
 function downloadExcel(){
   const klp=CFG.kelompok||'Kelompok', per=getPeriode(), wb=XLSX.utils.book_new();
   const BORDER={top:{style:'thin',color:{rgb:'000000'}},bottom:{style:'thin',color:{rgb:'000000'}},left:{style:'thin',color:{rgb:'000000'}},right:{style:'thin',color:{rgb:'000000'}}};
-  const FMT_RP='"Rp "#,##0';
+  const FMT_RP='"Rp "#.##0';
   const S_HDR={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:BORDER};
   const S_DATA={alignment:{vertical:'center'},border:BORDER}, S_DATAR={numFmt:FMT_RP,alignment:{horizontal:'right',vertical:'center'},border:BORDER};
   const S_FORM={numFmt:FMT_RP,font:{bold:true,color:{rgb:'1A5C30'}},fill:{fgColor:{rgb:'E8F5EF'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
@@ -418,6 +418,7 @@ function downloadExcel(){
         // Merge kolom 0-3 (NO, KK, Anggota, NAMA) — index baris = judul + kosong + header + data sejauh ini
         const rIdx = aoa.length;
         merges.push({s:{r:rIdx,c:0},e:{r:rIdx,c:3}});
+        srow[0]={...S_TOT, alignment:{horizontal:'center',vertical:'center'}};
         // td[0] colSpan=6 → skip, td[1..] adalah nilai total kolom IR dst
         // Kolom IR di Excel = index 4 (setelah NO,KK,Angg,NAMA)
         let colOut=4;
@@ -430,24 +431,25 @@ function downloadExcel(){
         }
         aoa.push(row); styles.push(srow); return;
       }
-      let ci=0;
+      let ci=0, colOutIdx=0;
       const tdMap=[];
       tds.forEach((td,i)=>{ const span=parseInt(td.colSpan)||1; for(let s=0;s<span;s++) tdMap[ci+s]=i; ci+=span; });
       const maxCi=ci;
-      // Set untuk track td yang sudah diproses (hindari duplikat dari colSpan)
       const processedTd=new Set();
       for(let c=0;c<maxCi;c++){
         if(skipCols.includes(c)) continue;
         const tdI=tdMap[c]; if(tdI===undefined) continue;
-        if(processedTd.has(tdI)){ row.push(''); srow.push(S_DATA); continue; }
+        if(processedTd.has(tdI)){ row.push(''); srow.push(S_DATA); colOutIdx++; continue; }
         processedTd.add(tdI);
         const td=tds[tdI];
         const ce=td.querySelector('[contenteditable]');
         const raw=ce?(ce.textContent||'').trim():(td.textContent||'').trim();
         const n=parseFloat(raw.replace(/\./g,'').replace(',','.'));
         const val=(raw!==''&&!isNaN(n))?n:raw;
-        let st=isTotal?S_TOT:td.className.includes('form')||td.className.includes('ref')||td.className.includes('auto')?S_FORM:typeof val==='number'?S_DATAR:S_DATA;
-        row.push(val); srow.push(st);
+        // Kolom 0-3 output (NO,KK,Anggota,NAMA) tidak pakai format Rp
+        const noRp = colOutIdx < 4;
+        let st=isTotal?S_TOT:td.className.includes('form')||td.className.includes('ref')||td.className.includes('auto')?S_FORM:typeof val==='number'?(noRp?{alignment:{horizontal:'right',vertical:'center'},border:BORDER}:S_DATAR):S_DATA;
+        row.push(val); srow.push(st); colOutIdx++;
       }
       if(row.some(c=>c!==''&&c!==null&&c!==undefined)){aoa.push(row);styles.push(srow);}
     });
