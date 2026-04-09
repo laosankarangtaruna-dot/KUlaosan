@@ -387,7 +387,7 @@ function terapkanKelasKeData(){
 function downloadExcel(){
   const klp=CFG.kelompok||'Kelompok', per=getPeriode(), wb=XLSX.utils.book_new();
   const BORDER={top:{style:'thin',color:{rgb:'000000'}},bottom:{style:'thin',color:{rgb:'000000'}},left:{style:'thin',color:{rgb:'000000'}},right:{style:'thin',color:{rgb:'000000'}}};
-  const FMT_RP='"Rp "#.##0';
+  const FMT_RP='"Rp "#,##0';
   const S_HDR={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:BORDER};
   const S_DATA={alignment:{vertical:'center'},border:BORDER}, S_DATAR={numFmt:FMT_RP,alignment:{horizontal:'right',vertical:'center'},border:BORDER};
   const S_FORM={numFmt:FMT_RP,font:{bold:true,color:{rgb:'1A5C30'}},fill:{fgColor:{rgb:'E8F5EF'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
