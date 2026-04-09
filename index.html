@@ -460,7 +460,7 @@ function downloadExcel(){
     });
     const ws=XLSX.utils.aoa_to_sheet(aoa);if(merges.length) ws['!merges']=merges;
     const range=XLSX.utils.decode_range(ws['!ref']||'A1');for(let R=range.s.r;R<=range.e.r;R++) for(let C=range.s.c;C<=range.e.c;C++){const addr=XLSX.utils.encode_cell({r:R,c:C});if(!ws[addr]) ws[addr]={t:'z',v:''};ws[addr].s=(styles[R]&&styles[R][C])||S_DATA;}
-    const hdrRow=aoa[judulBaris.length+1]||[];ws['!cols']=hdrRow.map((h)=>{h=String(h||'').toUpperCase();let w=10;if(h==='NO'||h==='KK') w=5;else if(h.includes('NAMA')||h.includes('KETERANGAN')) w=30;else if(h.includes('DEBET')||h.includes('KREDIT')||h.includes('SALDO')) w=14;return{wch:w};});
+    const hdrRow=aoa[judulBaris.length+1]||[];ws['!cols']=hdrRow.map((h)=>{h=String(h||'').toUpperCase();let w=14;if(h==='NO'||h==='KK') w=5;else if(h==='ANGGOTA') w=8;else if(h.includes('NAMA')||h.includes('KETERANGAN')) w=28;else if(h.includes('SATPAM')||h.includes('DONATUR')||h.includes('LAILATUL')||h.includes('SHODAQOH')) w=18;else if(h.includes('JATAH')||h.includes('TANAH')||h.includes('REMAJA')||h.includes('MERAH')||h.includes('SEHAT')) w=16;else if(h==='TGL'||h==='CODE') w=8;return{wch:w};});
     ws['!rows']=aoa.map((_,ri)=>ri<judulBaris.length?{hpt:18}:ri===judulBaris.length?{hpt:6}:ri===judulBaris.length+1?{hpt:36}:{hpt:14});return ws;
   }
   XLSX.utils.book_append_sheet(wb,sheetDariTabel('t1',[0,1],['KELOMPOK '+klp.toUpperCase(),'DATA SEMUA JAMAAH',per.toUpperCase()]),'Data Jamaah');
