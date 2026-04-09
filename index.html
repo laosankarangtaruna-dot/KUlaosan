@@ -433,7 +433,7 @@ function downloadExcel(){
       }
       // Baris SALDO (tr.rs / tr.rsa): td[0] colSpan=5 = label rata kanan, td[1] = nilai
       if(tr.className.includes('rs')||tr.className.includes('rsa')){
-        const S_SALDO={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:tr.className.includes('rsa')?'0F3D28':'2E7D5A'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
+        const S_SALDO={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:tr.className.includes('rsa')?'0F3D28':'2E7D5A'}},alignment:{horizontal:'center',vertical:'center'},border:BORDER};
         const labelTxt=(tds[0]?.textContent||'').trim();
         for(let c=0;c<totalCols;c++){row.push('');srow.push(S_SALDO);}
         // Merge semua kolom kecuali terakhir untuk label
