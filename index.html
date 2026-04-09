@@ -387,7 +387,7 @@ function terapkanKelasKeData(){
 function downloadExcel(){
   const klp=CFG.kelompok||'Kelompok', per=getPeriode(), wb=XLSX.utils.book_new();
   const BORDER={top:{style:'thin',color:{rgb:'000000'}},bottom:{style:'thin',color:{rgb:'000000'}},left:{style:'thin',color:{rgb:'000000'}},right:{style:'thin',color:{rgb:'000000'}}};
-  const FMT_RP='"Rp "#,##0';
+  const FMT_RP='"Rp "#.##0';
   const S_HDR={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1A4D3A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:BORDER};
   const S_DATA={alignment:{vertical:'center'},border:BORDER}, S_DATAR={numFmt:FMT_RP,alignment:{horizontal:'right',vertical:'center'},border:BORDER};
   const S_FORM={numFmt:FMT_RP,font:{bold:true,color:{rgb:'1A5C30'}},fill:{fgColor:{rgb:'E8F5EF'}},alignment:{horizontal:'right',vertical:'center'},border:BORDER};
@@ -448,7 +448,12 @@ function downloadExcel(){
         const val=(raw!==''&&!isNaN(n))?n:raw;
         // Kolom 0-3 output (NO,KK,Anggota,NAMA) tidak pakai format Rp
         const noRp = colOutIdx < 4;
-        let st=isTotal?S_TOT:td.className.includes('form')||td.className.includes('ref')||td.className.includes('auto')?S_FORM:typeof val==='number'?(noRp?{alignment:{horizontal:'right',vertical:'center'},border:BORDER}:S_DATAR):S_DATA;
+        const isNumCell = td.className.includes('form')||td.className.includes('ref')||td.className.includes('auto');
+        let st;
+        if(isTotal) st=S_TOT;
+        else if(noRp) st=typeof val==='number'?{alignment:{horizontal:'right',vertical:'center'},border:BORDER}:S_DATA;
+        else if(isNumCell) st=S_FORM;
+        else st=typeof val==='number'?S_DATAR:S_DATA;
         row.push(val); srow.push(st); colOutIdx++;
       }
       if(row.some(c=>c!==''&&c!==null&&c!==undefined)){aoa.push(row);styles.push(srow);}
